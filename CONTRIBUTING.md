@@ -76,6 +76,19 @@ Here's the recommended workflow:
 If what you are going to work on is a substantial change, please first
 ask the core team for their opinion on the [RabbitMQ users mailing list][rmq-users].
 
+### Running Tests
+
+See [RUNNING_TESTS.md](/RUNNING_TESTS.md).
+
+### Running Benchmarks
+
+Benchmarks can be found under `./projects/Benchmarks`. On the command line, run them with `dotnet run`
+like so:
+
+```
+dotnet run -c Release -f netcoreapp5.0 --project ./projects/Benchmarks/ --filter Networking_BasicDeliver_LongLivedConnection
+```
+
 ## Code of Conduct
 
 See [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).

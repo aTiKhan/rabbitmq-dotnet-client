@@ -1,14 +1,16 @@
 #!/bin/sh
 
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+
 set -e
 
-dotnet restore ./projects/client/RabbitMQ.Client
-dotnet build -f netstandard1.5 ./projects/client/RabbitMQ.Client
-dotnet restore ./projects/client/Unit
-dotnet build ./projects/client/Unit
-# export RABBITMQ_RABBITMQCTL_PATH=$(pwd)/../rabbit/scripts/rabbitmqctl
-cd ./projects/client/Unit
+if command -v realpath >/dev/null 2>&1
+then
+    readonly script_dir="$(dirname "$(realpath "$0")")"
+else
+    readonly script_dir="$(cd "$(dirname "$0")" && pwd)"
+fi
 
-dotnet test -f netcoreapp2.0
+cd "$script_dir"
 
-
+dotnet test --no-build --logger 'console;verbosity=detailed' --framework 'netcoreapp3.1' ./RabbitMQDotNetClient.sln < /dev/null

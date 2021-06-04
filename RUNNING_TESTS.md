@@ -1,13 +1,14 @@
 ## Overview
 
-.NET client's test suite assumes there's a RabbitMQ node listening on localhost:5672
+.NET client's test suite assumes there's a RabbitMQ node listening on `localhost:5672`
 (the default settings). SSL tests require a broker listening on the default
 SSL port. Connection recovery tests assume `rabbitmqctl` at `../rabbitmq-server/scripts/rabbitmqctl`
 can control the running node: this is the case when all repositories are cloned using
 the [umbrella repository](https://github.com/rabbitmq/rabbitmq-public-umbrella).
 
-It is possible to use [Visual Studio 2015 Community Edition](https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx),
-.NET Core, and `dotnet.exe` in `PATH`, to build the client and run the test suite.
+It is possible to use Visual Studio Community Edition .NET Core, and
+`dotnet.exe` in `PATH`, to build the client and run the test suite.
+
 
 ## Building
 
@@ -16,50 +17,102 @@ and perform protocol encoder/decoder code generation.
 
 On Windows run:
 
-    build.bat
+``` powershell
+build.bat
+```
 
-On osx/linux run:
+On MacOS and linux run:
 
-    build.sh
+``` shell
+build.sh
+```
 
 This will complete the code AMQP 0-9-1 protocol code generation and build all projects. After this open the solution in Visual Studio.
 
 
-## Running Tests
+## Test Environment Requirements
 
-Tests can be run from Visual Studio using [NUnit Test Adapter](https://visualstudiogallery.msdn.microsoft.com/6ab922d0-21c0-4f06-ab5f-4ecd1fe7175d).
-Note that it may take some time for the adapter to discover tests in the assemblies.
+Tests can be run from Visual Studio using the NUnit Test Adapter.  Note that it
+may take some time for the adapter to discover tests in the assemblies.
 
-The test suite assumes there's a RabbitMQ node running locally with all defaults, and the tests will need to be able to run commands against the [rabbitmqctl](https://www.rabbitmq.com/rabbitmqctl.8.html) tool for that node. Two options to accomplish this are:
+The test suite assumes there's a RabbitMQ node running locally with all
+defaults, and the tests will need to be able to run commands against the
+[`rabbitmqctl`](https://www.rabbitmq.com/rabbitmqctl.8.html) tool for that node.
+Two options to accomplish this are covered below.
 
-1. Team RabbitMQ uses [rabbitmq-public-umbrella](https://github.com/rabbitmq/rabbitmq-public-umbrella), which sets up a local RabbitMQ server [built from source](https://www.rabbitmq.com/build-server.html):
+### Option One: Using a RabbitMQ Release
+
+It is possible to install and run a node using any [binary build](https://www.rabbitmq.com/download.html)
+suitable for the platform. Its [CLI tools]() then must be added to `PATH` so that `rabbitmqctl` can be
+invoked directly without using an absolute file path. Note that this method does *not* work on Windows.
+
+On Windows, you must run unit tests as follows (replace `X.Y.Z` with your RabbitMQ version):
+
 ```
-    git clone https://github.com/rabbitmq/rabbitmq-public-umbrella umbrella
-    cd umbrella
-    make co
-    cd deps/rabbit
-    make
-    make run-broker
+set "RABBITMQ_RABBITMQCTL_PATH=C:\Program Files\RabbitMQ Server\rabbitmq_server-X.Y.Z\sbin\rabbitmqctl.bat"
+.\run-test.bat
 ```
 
-2. You can load a RabbitMQ node in a [docker](https://www.docker.com/) container. You will need to create an environment variable `RABBITMQ_RABBITMQCTL_PATH` and set it to `DOCKER:<container_name>` (for example `DOCKER:rabbitmq01`). This tells the unit tests to run the `rabbitmqctl` commands through docker, in the format `docker exec rabbitmq01 rabbitmqctl <args>`:
+### Option Two: Using RabbitMQ Umbrella Repository
+
+Team RabbitMQ uses [rabbitmq-public-umbrella](https://github.com/rabbitmq/rabbitmq-public-umbrella),
+which makes it easy to run a RabbitMQ node [built from source](https://www.rabbitmq.com/build-server.html):
+
 ```
-    docker run -d --hostname rabbitmq01 --name rabbitmq01 -p 15672:15672 -p 5672:5672 rabbitmq:3-management
+git clone https://github.com/rabbitmq/rabbitmq-public-umbrella umbrella
+cd umbrella
+make co
+cd deps/rabbit
+make
+make run-broker
 ```
 
-Then, to run the tests on Windows use:
+`rabbitmqctl` location will be computed using a relative path in the umbrella.
+It is possible to override the location using `RABBITMQ_RABBITMQCTL_PATH`:
 
-    run-test.bat
+```
+RABBITMQ_RABBITMQCTL_PATH=/path/to/rabbitmqctl dotnet test projects/Unit
+```
+
+### Option Three: Using a Docker Container
+
+It is also possible to run a RabbitMQ node in a [Docker](https://www.docker.com/) container.  Set the environment variable `RABBITMQ_RABBITMQCTL_PATH` to `DOCKER:<container_name>` (for example `DOCKER:rabbitmq01`). This tells the unit tests to run the `rabbitmqctl` commands through Docker, in the format `docker exec rabbitmq01 rabbitmqctl <args>`:
+
+``` shell
+docker run -d --hostname rabbitmq01 --name rabbitmq01 -p 15672:15672 -p 5672:5672 rabbitmq:3-management
+```
+
+## Running All Tests
+
+Then, to run the tests use:
+
+``` powershell
+# will run tests on .NET Core and .NET Framework
+run-test.bat
+```
 
 On MacOS, Linux, BSD use:
 
-    run-test.sh
+``` shell
+# will only run tests on .NET Core
+run-test.sh
+```
+
+## Running Individual Suites or Test Casess
 
 Running individual tests and fixtures on Windows is trivial using the Visual Studio test runner.
-To run a specific tests fixture on MacOS or Linux, use the NUnit filter expressions to select the tests
-to be run:
+To run a specific tests fixture on MacOS or Linux, use the NUnit filter expressions to select the tests to be run:
 
-    dotnet test projects/client/Unit --filter "Name~TestAmqpUriParseFail"
+``` shell
+dotnet test projects/Unit -f netcoreapp3.1 --filter "Name~TestAmqpUriParseFail"
 
+dotnet test projects/Unit -f netcoreapp3.1 --filter "FullyQualifiedName~RabbitMQ.Client.Unit.TestHeartbeats"
+```
 
-    dotnet test projects/client/Unit --filter "FullyQualifiedName~RabbitMQ.Client.Unit.TestHeartbeats"
+## Running Tests for a Specific .NET Target
+
+To only run tests on .NET Core:
+
+``` shell
+dotnet test -f netcoreapp3.1 projects/Unit
+```
